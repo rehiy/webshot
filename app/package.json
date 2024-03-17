@@ -1,0 +1,14 @@
+{
+    "name": "webshot-api",
+    "version": "1.0.0",
+    "description": "Playwright Webshot API",
+    "main": "app.js",
+    "scripts": {
+        "start": "node app.js"
+    },
+    "dependencies": {
+        "sharp": "^0.33.2",
+        "express": "^4.18.3",
+        "playwright": "^1.42.1"
+    }
+}

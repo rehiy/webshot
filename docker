@@ -1,0 +1,32 @@
+#!/bin/sh
+#
+# @Author  Rehiy <wang@rehiy.com>
+# @Website http://www.rehiy.com
+#
+
+APP_NAME=webshot
+
+APP_FROM=mcr.microsoft.com/playwright:v1.42.1-jammy
+
+APP_PATH=$(cd `dirname $0`; pwd)
+
+#####################################################################################
+
+if [ "$1" = "install" ] || [ "$1" = "update" ]; then
+    docker pull $APP_FROM
+fi
+
+if [ "$1" = "remove" ] || [ "$1" = "update" ]; then
+    docker rm -f $APP_NAME
+fi
+
+if [ "$1" = "install" ] || [ "$1" = "update" ]; then
+    chmod +x $APP_PATH/app/boot.sh
+    docker run --name $APP_NAME -d \
+        --restart unless-stopped \
+        --network mcnet --ip 192.168.10.41 \
+        --volume $APP_PATH/app:/app \
+        --env "TOKEN=your-token" \
+        --env "PORT=3000" \
+        $APP_FROM /app/boot.sh
+fi
