@@ -1,44 +1,50 @@
-const { chromium, devices } = require('playwright');
-const express = require('express');
+const http = require('http');
 const sharp = require('sharp');
-
-const app = express();
+const { chromium, devices } = require('playwright');
 
 const port = process.env.PORT || 3000;
 const token = process.env.TOKEN || 'token';
 
-app.get('/' + token + '/:wait/:trim/:device/*', async (req, res) => {
-    const hexColor = /^([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-    const params = req.params || {};
-    try {
-        // 获取参数
-        const waitFor = params.wait > 0 ? +params.wait : 0;
-        const trimColor = hexColor.test(params.trim) ? params.trim : '';
-        const deviceInfo = devices[params.device] || devices['Desktop'];
-        const queryString = req.url.indexOf('?') > 0 ? '?' + req.url.split('?')[1] : '';
-        const targetUrl = req.params[0] ? req.params[0] + queryString : 'https://example.com';
-        // 截取屏幕
-        const image = await screenshot({ waitFor, trimColor, deviceInfo, targetUrl });
-        // 输出图片
-        res.writeHead(200, {
-            'Content-Type': 'image/png',
-            'Content-Length': image.length,
-        });
-        res.end(image);
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).send('Internal Server Error');
+const server = http.createServer(async (req, res) => {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const paths = url.pathname.split('/').filter(Boolean);
+
+    if (paths[0] === token && paths.length > 4) {
+        const hexColor = /^([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+        try {
+            const args = {
+                waitFor: paths[1] > 0 ? +paths[1] : 0,
+                trimColor: hexColor.test(paths[2]) ? paths[2] : '',
+                deviceInfo: devices[paths[3]] || devices['Desktop'],
+                targetUrl: paths.slice(4).join('/') + (url.search || ''),
+            };
+            // 截取屏幕
+            const image = await screenshot(args);
+            // 输出图片
+            res.writeHead(200, {
+                'Content-Type': 'image/png',
+                'Content-Length': image.length,
+            });
+            res.end(image);
+        } catch (error) {
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.end('Internal Server Error');
+            console.error('Error:', error);
+        }
+    } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end(`Url shoude be like http://${req.headers.host}/:token/:wait/:trim/:device/*`);
     }
 });
 
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Screenshot API listening at http://localhost:${port}`);
 });
 
 // 无头浏览器截图
 
 async function screenshot(args) {
-    const { waitFor, trimColor, deviceInfo, targetUrl } = args
+    const { waitFor, trimColor, deviceInfo, targetUrl } = args;
 
     // 加载页面
     const browser = await chromium.launch();
@@ -61,8 +67,7 @@ async function screenshot(args) {
     let image = await page.screenshot({ fullPage: true });
 
     // 销毁资源
-    await context.close();
-    await browser.close();
+    context.close(), browser.close();
 
     // 压缩图片
     if (trimColor) {

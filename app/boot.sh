@@ -3,4 +3,4 @@
 cd /app
 
 npm i
-npm start
+exec node app.js

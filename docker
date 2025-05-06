@@ -6,7 +6,7 @@
 
 APP_NAME=webshot
 
-APP_FROM=mcr.microsoft.com/playwright:v1.42.1-jammy
+APP_FROM=mcr.microsoft.com/playwright:v1.52.0-jammy
 
 APP_PATH=$(cd `dirname $0`; pwd)
 
