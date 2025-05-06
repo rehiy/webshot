@@ -48,7 +48,9 @@ async function screenshot(args) {
 
     // 加载页面
     const browser = await chromium.launch();
-    const context = await browser.newContext(deviceInfo);
+    const context = await browser.newContext({
+        ...deviceInfo
+    });
     const page = await context.newPage();
     await page.goto(targetUrl);
 
@@ -67,7 +69,7 @@ async function screenshot(args) {
     let image = await page.screenshot({ fullPage: true });
 
     // 销毁资源
-    context.close(), browser.close();
+    [await context.close(), await browser.close()];
 
     // 压缩图片
     if (trimColor) {
