@@ -16,7 +16,7 @@ docker run --name webshot -d \
 
 ### 请求格式
 
-```
+```http
 POST http://{HOST}:{PORT}/{TOKEN}
 Content-Type: application/json
 ```
@@ -69,20 +69,20 @@ curl -X POST http://your-ip:3000/your-token \
   -H "Content-Type: application/json" \
   -d '{"url":"https://example.com","trimColor":"ffffff"}' \
   -o screenshot.png
-```·
+```
 
 ## 设备类型
 
 ### 移动设备
 
-- iPhone 6/7/8/SE/X/XR/11/12/13/14/15 系列
+* iPhone 6/7/8/SE/X/XR/11/12/13/14/15 系列
 * iPad (gen 5/6/7)/iPad Mini/iPad Pro 11
 * Galaxy Note/S 系列、Pixel 系列、Nexus 系列
 * BlackBerry、Lumia、Kindle Fire HDX
 
 ### 桌面设备
 
-- Desktop Chrome（默认）
+* Desktop Chrome（默认）
 * Desktop Edge / Firefox / Safari
 * Desktop Chrome/Edge/Firefox HiDPI
 
@@ -108,7 +108,7 @@ npm test       # 运行测试
 
 ### 项目结构
 
-```
+```dir
 web-screenshot/
 ├── app/
 │   ├── app.js                 # 主应用
@@ -140,4 +140,4 @@ web-screenshot/
 
 ## 许可证
 
-Copyright © 2026 Rehiy <wang@rehiy.com>
+Copyright © 2010 - 2026 Rehiy <wang@rehiy.com>
