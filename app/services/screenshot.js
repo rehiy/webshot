@@ -4,128 +4,134 @@ import { BrowserManager } from './browser-manager.js';
 import { ImageProcessor } from './image-processor.js';
 
 /**
- * 等待加载策略
- */
-export const WAIT_STRATEGIES = {
-    LOAD: 0,
-    DOM: 1,
-    NETWORK_IDLE: 2,
-    TIMEOUT: 3
-};
-
-/**
  * 截图服务
- * 负责截图业务逻辑
  */
 export class ScreenshotService {
-    static hexColorRegex = /^([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+    // HEX 颜色正则表达式
+    static HEX_COLOR_REGEX = /^([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
 
     /**
      * 获取设备信息
+     * @param {string} deviceName - 设备名称
+     * @returns {object} 设备配置信息
      */
     static getDeviceInfo(deviceName) {
         return devices[decodeURI(deviceName)] || devices['Desktop Chrome'];
     }
 
     /**
-     * 验证 hex 颜色
+     * 验证 hex 颜色格式
+     * @param {string} color - 颜色值
+     * @returns {boolean} 是否有效
      */
     static isValidHexColor(color) {
-        return typeof color === 'string' && this.hexColorRegex.test(color);
+        return typeof color === 'string' && this.HEX_COLOR_REGEX.test(color);
     }
 
     /**
      * 等待页面加载
+     * @param {object} page - Playwright 页面对象
+     * @param {number} waitFor - 等待策略：0=load, 1=domcontentloaded, 2=networkidle0, >2=毫秒数
      */
     static async waitForPage(page, waitFor) {
-        const strategies = {
-            [WAIT_STRATEGIES.LOAD]: 'load',
-            [WAIT_STRATEGIES.DOM]: 'domcontentloaded',
-            [WAIT_STRATEGIES.NETWORK_IDLE]: 'networkidle0'
-        };
-
-        const state = strategies[waitFor];
-        if (state) {
-            await page.waitForLoadState(state);
-        } else {
-            await page.waitForTimeout(waitFor);
-        }
+        const states = { 0: 'load', 1: 'domcontentloaded', 2: 'networkidle0' };
+        const state = states[waitFor];
+        state ? await page.waitForLoadState(state) : await page.waitForTimeout(waitFor);
     }
 
     /**
-     * 执行截图的通用方法
+     * 构建水印文本
+     * 格式：{自定义文本} | {时间戳} | URL:{url} | Device:{device} | UA:{浏览器版本} | Wait:{策略} | Trim:{颜色} | Cookies:{数量} | JS:{true/false}
      */
-    static async _capturePage(pageAction, params) {
+    static buildWatermarkText({ watermark, url, html, device, waitFor, trimColor, cookies, evaluate, deviceInfo }) {
+        if (!watermark) return null;
+
+        const parts = [
+            watermark,
+            new Date().toISOString().slice(0, 19).replace('T', ' ')
+        ];
+
+        url && parts.push(`URL:${url}`);
+        html && parts.push('HTML');
+        device && parts.push(`Device:${device}`);
+
+        if (deviceInfo?.userAgent) {
+            const uaMatch = deviceInfo.userAgent.match(/(Chrome|Firefox|Safari|Edg)\/([\d.]+)/);
+            uaMatch && parts.push(`UA:${uaMatch[1]} ${uaMatch[2]}`);
+        }
+
+        waitFor !== undefined && parts.push(`Wait:${
+            waitFor === 0 ? 'load' : waitFor === 1 ? 'dom' : waitFor === 2 ? 'networkidle' : `${waitFor}ms`
+        }`);
+        trimColor && parts.push(`Trim:#${trimColor}`);
+        cookies?.length && parts.push(`Cookies:${cookies.length}`);
+        evaluate && parts.push('JS:true');
+
+        return parts.join(' | ');
+    }
+
+    /**
+     * 执行截图
+     * @param {function} pageAction - 页面操作函数
+     * @param {object} params - 截图参数
+     * @returns {Buffer} 截图数据
+     */
+    static async _capture(pageAction, params) {
         const { waitFor, trimColor, deviceInfo, cookies, evaluate } = params;
         const manager = new BrowserManager();
 
         try {
             const page = await manager.init(deviceInfo);
 
-            // 设置 cookies
-            if (cookies && Array.isArray(cookies) && cookies.length > 0) {
-                const context = page.context();
-                await context.addCookies(cookies);
-            }
+            // 设置 Cookies
+            cookies?.length && (await page.context().addCookies(cookies));
 
+            // 执行页面操作
             await pageAction(page);
+
+            // 等待页面加载
             await this.waitForPage(page, waitFor);
 
             // 执行 JavaScript
-            if (evaluate && typeof evaluate === 'string') {
-                try {
-                    await page.evaluate(evaluate);
-                } catch (error) {
-                    console.error('JavaScript evaluation error:', error);
-                }
+            if (evaluate) {
+                try { await page.evaluate(evaluate); }
+                catch (e) { console.error('JS evaluation error:', e); }
             }
 
+            // 截图并处理
             const image = await page.screenshot({ fullPage: true });
-            return await ImageProcessor.processImage(image, trimColor);
+            const watermarkText = this.buildWatermarkText(params);
+            return await ImageProcessor.processImage(image, trimColor, watermarkText);
         } finally {
             await manager.close();
         }
     }
 
     /**
-     * 通过 URL 截图
-     */
-    static async captureByUrl(targetUrl, params) {
-        return await this._capturePage(
-            page => page.goto(targetUrl),
-            { ...params, targetUrl }
-        );
-    }
-
-    /**
-     * 通过 HTML 截图
-     */
-    static async captureByHtml(html, params) {
-        return await this._capturePage(
-            page => page.setContent(html, { waitUntil: 'domcontentloaded' }),
-            { ...params, html }
-        );
-    }
-
-    /**
      * 统一截图入口
+     * @param {object} options - 截图选项
+     * @returns {Buffer} 截图数据
      */
-    static async capture({ url, html, waitFor = 0, trimColor = '', device, cookies, evaluate }) {
+    static async capture({ url, html, waitFor = 0, trimColor = '', device, cookies, evaluate, watermark }) {
         if (!url && !html) {
             throw new Error('Either "url" or "html" parameter is required');
         }
 
         const deviceInfo = this.getDeviceInfo(device);
-        const params = {
-            waitFor: +waitFor,
-            trimColor: this.isValidHexColor(trimColor) ? trimColor : '',
-            deviceInfo,
-            cookies,
-            evaluate
-        };
 
-        return url
-            ? await this.captureByUrl(url, params)
-            : await this.captureByHtml(html, params);
+        return this._capture(
+            url ? page => page.goto(url) : page => page.setContent(html, { waitUntil: 'domcontentloaded' }),
+            {
+                waitFor: +waitFor,
+                trimColor: this.isValidHexColor(trimColor) ? trimColor : '',
+                deviceInfo,
+                cookies,
+                evaluate,
+                watermark,
+                url,
+                html,
+                device
+            }
+        );
     }
 }

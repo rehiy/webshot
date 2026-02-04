@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
             background: #fff;
             border: 1px solid #e9ecef;
@@ -292,6 +292,10 @@
                         <label for="evaluate">执行 JavaScript</label>
                         <textarea id="evaluate" name="evaluate" placeholder='document.body.style.backgroundColor = "#fff";'></textarea>
                     </div>
+                    <div class="form-group">
+                        <label for="watermark">盲水印文本</label>
+                        <input type="text" id="watermark" name="watermark" placeholder="版权信息或标识">
+                    </div>
                     <button type="submit">生成截图</button>
                 </form>
             </div>
@@ -306,6 +310,12 @@
             <div class="result" id="result">
                 <h2 style="color: #212529; font-size: 14px; font-weight: 600; margin-bottom: 15px; text-transform: uppercase;">截图结果</h2>
                 <img id="screenshot" alt="截图">
+                <div style="margin-top: 20px;">
+                    <button type="button" id="extractBtn" style="padding: 8px 16px; background: #212529; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">提取盲水印</button>
+                    <div id="watermarkResult" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; display: none;">
+                        <strong>提取结果：</strong> <span id="watermarkText"></span>
+                    </div>
+                </div>
             </div>
 
             <div class="section">
@@ -330,10 +340,19 @@
         const error = document.getElementById('error');
         const apiUrl = document.getElementById('apiUrl');
         const curlExample = document.getElementById('curlExample');
+        const extractBtn = document.getElementById('extractBtn');
+        const watermarkResult = document.getElementById('watermarkResult');
+        const watermarkText = document.getElementById('watermarkText');
 
         const savedToken = localStorage.getItem('webshot_token');
         if (savedToken) {
             tokenInput.value = savedToken;
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.classList.add('show');
+            setTimeout(() => error.classList.remove('show'), 5000);
         }
 
         function updateApiUrl() {
@@ -380,6 +399,9 @@
             // 添加 evaluate
             data.evaluate = document.getElementById('evaluate').value.trim();
 
+            // 添加 watermark
+            data.watermark = document.getElementById('watermark').value.trim();
+
             if (!data.url && !data.html) {
                 showError('请输入 URL 或 HTML 内容');
                 return;
@@ -414,11 +436,47 @@
             }
         });
 
-        function showError(message) {
-            error.textContent = message;
-            error.classList.add('show');
-            setTimeout(() => error.classList.remove('show'), 5000);
-        }
+        // 提取水印功能
+        extractBtn.addEventListener('click', async () => {
+            const token = tokenInput.value.trim();
+            if (!token) {
+                showError('请输入 Token');
+                return;
+            }
+
+            if (!screenshot.src) {
+                showError('请先生成截图');
+                return;
+            }
+
+            // 将截图转为 base64
+            const response = await fetch(screenshot.src);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = async () => {
+                const base64data = reader.result.split(',')[1];
+
+                try {
+                    const res = await fetch('/' + token + '/extract', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: base64data })
+                    });
+
+                    const data = await res.json();
+                    if (data.watermark) {
+                        watermarkText.textContent = data.watermark;
+                        watermarkResult.style.display = 'block';
+                    } else {
+                        watermarkText.textContent = '未检测到水印';
+                        watermarkResult.style.display = 'block';
+                    }
+                } catch (err) {
+                    showError('提取失败: ' + err.message);
+                }
+            };
+        });
     </script>
 </body>
 

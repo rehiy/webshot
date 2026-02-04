@@ -1,6 +1,6 @@
 # Web Screenshot API
 
-基于 Playwright 的网页截图服务，支持多设备模拟和图片处理。
+基于 Playwright 的网页截图服务，支持多设备模拟、图片处理和盲水印。
 
 ## 快速开始
 
@@ -36,6 +36,7 @@ Content-Type: application/json
 | `device` | string | 否 | 设备类型，默认 Desktop Chrome |
 | `cookies` | array | 否 | Cookie 数组 |
 | `evaluate` | string | 否 | 截图前执行的 JavaScript |
+| `watermark` | string | 否 | 盲水印文本 |
 
 * `url` 和 `html` 二选一
 
@@ -48,12 +49,12 @@ Content-Type: application/json
 | `2` | 等待 networkidle0 |
 | `>2` | 等待指定毫秒数 |
 
-### 示例
+### 使用示例
 
 **URL 截图**:
 
 ```bash
-curl -X POST http://you r:3000/your-token \
+curl -X POST http://your-ip:3000/your-token \
   -H "Content-Type: application/json" \
   -d '{"url":"https://example.com","waitFor":2}' \
   -o screenshot.png
@@ -96,10 +97,52 @@ curl -X POST http://your-ip:3000/your-token \
   -H "Content-Type: application/json" \
   -d '{
     "url":"https://example.com",
-    "evaluate":"document.body.style.backgroundColor='#fff'"
+    "evaluate":"document.body.style.backgroundColor=\"#fff\""
   }' \
   -o screenshot.png
 ```
+
+### 盲水印
+
+盲水印采用 LSB（最低有效位）隐写技术，将信息编码到图片蓝色通道的最低位，视觉上完全不可见，可用于版权验证和来源追踪。
+
+**添加盲水印**:
+
+```bash
+curl -X POST http://your-ip:3000/your-token \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url":"https://example.com",
+    "watermark":"版权所有 © 2026"
+  }' \
+  -o screenshot.png
+```
+
+水印会自动包含以下信息：
+- 自定义文本
+- 时间戳
+- URL 或 HTML 标识
+- 设备类型
+- 浏览器 User-Agent
+- 等待策略
+- 去除背景色设置
+- Cookie 数量
+- JavaScript 执行状态
+
+**水印格式示例**:
+```
+版权所有 © 2026 | 2026-02-04 12:30:45 | URL:https://example.com | Device:Desktop Chrome | UA:Chrome 131.0 | Wait:load | Trim:#ffffff | Cookies:2 | JS:true
+```
+
+**提取盲水印**:
+
+```bash
+curl -X POST http://your-ip:3000/your-token/extract \
+  -H "Content-Type: application/json" \
+  -d '{"image":"'$(base64 -w 0 screenshot.png)'"}'
+```
+
+或在调试界面生成截图后，点击"提取盲水印"按钮直接查看。
 
 ## 设备类型
 
@@ -133,7 +176,6 @@ curl -X POST http://your-ip:3000/your-token \
 cd app
 npm install
 npm start      # 启动服务
-npm test       # 运行测试
 ```
 
 ### 项目结构
@@ -141,27 +183,34 @@ npm test       # 运行测试
 ```dir
 web-screenshot/
 ├── app/
-│   ├── app.js                 # 主应用
+│   ├── app.js                 # 主应用，HTTP 服务器
 │   ├── boot.sh                # 启动脚本
 │   ├── package.json           # 依赖配置
 │   ├── public/
 │   │   └── index.html         # 调试界面
-│   ├── services/
-│   │   ├── browser-manager.js # 浏览器管理
-│   │   ├── image-processor.js # 图片处理
-│   │   ├── request-handler.js # 请求处理
-│   │   └── screenshot.js      # 截图服务
-│   └── test/                  # 测试
+│   └── services/
+│       ├── browser-manager.js # 浏览器生命周期管理
+│       ├── image-processor.js # 图片处理（压缩、裁剪、盲水印）
+│       ├── request-handler.js # HTTP 请求处理
+│       └── screenshot.js      # 截图业务逻辑
 ├── Dockerfile                 # 镜像配置
 ├── .dockerignore              # 构建忽略
 └── README.md                  # 文档
 ```
+
+### 核心模块说明
+
+- **browser-manager.js**: 管理 Playwright 浏览器实例的创建和销毁，每次截图使用独立实例避免状态污染
+- **image-processor.js**: 基于 Sharp 处理图片，支持压缩、裁剪和 LSB 盲水印（修改蓝色通道最低位）
+- **request-handler.js**: 处理 HTTP 请求体解析和响应发送
+- **screenshot.js**: 核心截图逻辑，支持 URL/HTML 两种方式，集成 Cookie、JS 执行和水印功能
 
 ## 安全
 
 * ✅ Docker 沙盒隔离
 * ✅ 非 Privileged 模式
 * ✅ Token 鉴权
+* ✅ 盲水印支持来源追踪
 
 ## 注意事项
 
@@ -169,6 +218,8 @@ web-screenshot/
 2. 每次截图创建独立浏览器实例
 3. 更新代码需重新构建镜像
 4. Token 请妥善保管
+5. 盲水印通过修改蓝色通道最低位实现，视觉不可见但可提取验证
+6. 水印信息包含完整的截图参数，便于追踪和审计
 
 ## 许可证
 
