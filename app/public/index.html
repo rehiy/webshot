@@ -355,9 +355,17 @@
             setTimeout(() => error.classList.remove('show'), 5000);
         }
 
+        function getApiBaseUrl() {
+            let path = location.pathname;
+            if (!path.endsWith('/')) {
+                path += '/';
+            }
+            return location.origin + path;
+        }
+
         function updateApiUrl() {
             const token = tokenInput.value || 'your-token';
-            const baseUrl = `${window.location.protocol}//${window.location.host}/${token}`;
+            const baseUrl = getApiBaseUrl() + token;
             apiUrl.textContent = `POST ${baseUrl}`;
             curlExample.textContent = `curl -X POST ${baseUrl} \\
   -H "Content-Type: application/json" \\
@@ -412,7 +420,7 @@
             error.classList.remove('show');
 
             try {
-                const response = await fetch('/' + token, {
+                const response = await fetch('./' + token, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -458,7 +466,7 @@
                 const base64data = reader.result.split(',')[1];
 
                 try {
-                    const res = await fetch('/' + token + '/extract', {
+                    const res = await fetch('./' + token + '/extract', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ image: base64data })
