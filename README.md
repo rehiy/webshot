@@ -12,6 +12,8 @@ docker run --name webshot -d \
   rehiy/webshot
 ```
 
+访问 `http://localhost:3000` 可使用调试界面。
+
 ## API 使用
 
 ### 请求格式
@@ -20,6 +22,8 @@ docker run --name webshot -d \
 POST http://{HOST}:{PORT}/{TOKEN}
 Content-Type: application/json
 ```
+
+或直接访问调试页面：`http://{HOST}:{PORT}`
 
 ### 请求参数
 
@@ -30,6 +34,8 @@ Content-Type: application/json
 | `waitFor` | number | 否 | 等待策略，默认 0 |
 | `trimColor` | string | 否 | 去除背景色（十六进制），如 `ffffff` |
 | `device` | string | 否 | 设备类型，默认 Desktop Chrome |
+| `cookies` | array | 否 | Cookie 数组 |
+| `evaluate` | string | 否 | 截图前执行的 JavaScript |
 
 * `url` 和 `html` 二选一
 
@@ -68,6 +74,30 @@ curl -X POST http://your-ip:3000/your-token \
 curl -X POST http://your-ip:3000/your-token \
   -H "Content-Type: application/json" \
   -d '{"url":"https://example.com","trimColor":"ffffff"}' \
+  -o screenshot.png
+```
+
+**使用 Cookies**:
+
+```bash
+curl -X POST http://your-ip:3000/your-token \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url":"https://example.com",
+    "cookies":[{"name":"session","value":"abc123","domain":"example.com"}]
+  }' \
+  -o screenshot.png
+```
+
+**执行 JavaScript**:
+
+```bash
+curl -X POST http://your-ip:3000/your-token \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url":"https://example.com",
+    "evaluate":"document.body.style.backgroundColor='#fff'"
+  }' \
   -o screenshot.png
 ```
 
@@ -114,6 +144,8 @@ web-screenshot/
 │   ├── app.js                 # 主应用
 │   ├── boot.sh                # 启动脚本
 │   ├── package.json           # 依赖配置
+│   ├── public/
+│   │   └── index.html         # 调试界面
 │   ├── services/
 │   │   ├── browser-manager.js # 浏览器管理
 │   │   ├── image-processor.js # 图片处理

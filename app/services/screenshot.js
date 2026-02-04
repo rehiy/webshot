@@ -56,13 +56,29 @@ export class ScreenshotService {
      * 执行截图的通用方法
      */
     static async _capturePage(pageAction, params) {
-        const { waitFor, trimColor, deviceInfo } = params;
+        const { waitFor, trimColor, deviceInfo, cookies, evaluate } = params;
         const manager = new BrowserManager();
 
         try {
             const page = await manager.init(deviceInfo);
+
+            // 设置 cookies
+            if (cookies && Array.isArray(cookies) && cookies.length > 0) {
+                const context = page.context();
+                await context.addCookies(cookies);
+            }
+
             await pageAction(page);
             await this.waitForPage(page, waitFor);
+
+            // 执行 JavaScript
+            if (evaluate && typeof evaluate === 'string') {
+                try {
+                    await page.evaluate(evaluate);
+                } catch (error) {
+                    console.error('JavaScript evaluation error:', error);
+                }
+            }
 
             const image = await page.screenshot({ fullPage: true });
             return await ImageProcessor.processImage(image, trimColor);
@@ -94,7 +110,7 @@ export class ScreenshotService {
     /**
      * 统一截图入口
      */
-    static async capture({ url, html, waitFor = 0, trimColor = '', device }) {
+    static async capture({ url, html, waitFor = 0, trimColor = '', device, cookies, evaluate }) {
         if (!url && !html) {
             throw new Error('Either "url" or "html" parameter is required');
         }
@@ -103,7 +119,9 @@ export class ScreenshotService {
         const params = {
             waitFor: +waitFor,
             trimColor: this.isValidHexColor(trimColor) ? trimColor : '',
-            deviceInfo
+            deviceInfo,
+            cookies,
+            evaluate
         };
 
         return url

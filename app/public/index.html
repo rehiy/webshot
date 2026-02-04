@@ -284,6 +284,14 @@
                         <label for="trimColor">去除背景色（十六进制，如 ffffff）</label>
                         <input type="text" id="trimColor" name="trimColor" placeholder="ffffff">
                     </div>
+                    <div class="form-group">
+                        <label for="cookies">Cookies（JSON 数组）</label>
+                        <textarea id="cookies" name="cookies" placeholder='[{"name":"token","value":"xxx","domain":".example.com"}]'></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="evaluate">执行 JavaScript</label>
+                        <textarea id="evaluate" name="evaluate" placeholder='document.body.style.backgroundColor = "#fff";'></textarea>
+                    </div>
                     <button type="submit">生成截图</button>
                 </form>
             </div>
@@ -357,6 +365,20 @@
                 device: document.getElementById('device').value,
                 trimColor: document.getElementById('trimColor').value
             };
+
+            // 解析 cookies
+            const cookiesText = document.getElementById('cookies').value.trim();
+            if (cookiesText) {
+                try {
+                    data.cookies = JSON.parse(cookiesText);
+                } catch (e) {
+                    showError('Cookies 格式错误，请使用有效的 JSON 数组');
+                    return;
+                }
+            }
+
+            // 添加 evaluate
+            data.evaluate = document.getElementById('evaluate').value.trim();
 
             if (!data.url && !data.html) {
                 showError('请输入 URL 或 HTML 内容');
