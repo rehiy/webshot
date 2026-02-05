@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/playwright:v1.58.1-jammy
 
-LABEL version="1.4.1"
+LABEL version="1.4.2"
 LABEL author="rehiy"
 
 WORKDIR /app
