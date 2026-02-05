@@ -225,4 +225,4 @@ web-screenshot/
 
 ## 许可证
 
-Copyright © 2010 - 2026 Rehiy <wang@rehiy.com>
+GPLv3
