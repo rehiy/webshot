@@ -77,14 +77,22 @@ function serveStatic(filename, res) {
 async function requestHandler(req, res) {
     const paths = req.url.split('/').filter(Boolean);
 
-    // GET 请求 - 仅允许根路径访问调试页面
+    // GET 请求 - 仅允许带 token 的路径访问调试页面
     if (req.method === 'GET') {
+        // 如果路径为空，返回使用说明页面
         if (paths.length === 0) {
-            serveStatic('public/index.html', res);
-        } else {
-            RequestHandler.sendError(res, 405, 'Method not allowed. Use POST instead.');
+            serveStatic('public/landing.html', res);
+            return;
         }
-        return;
+        // 如果路径只有一个部分，可能是 token
+        if (paths.length === 1) {
+            if (!validateToken(paths)) {
+                RequestHandler.sendError(res, 401, 'Invalid token');
+                return;
+            }
+            serveStatic('public/index.html', res);
+            return;
+        }
     }
 
     // 仅支持 POST 请求

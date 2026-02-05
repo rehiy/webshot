@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网页截图 API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Microsoft YaHei', sans-serif;
+            background: #f8f9fa;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            border: 1px solid #e9ecef;
+        }
+
+        .header {
+            background: #212529;
+            color: #fff;
+            padding: 20px 30px;
+            border-bottom: 1px solid #343a40;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            color: #212529;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #212529;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 20px;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+
+        .info-box h3 {
+            color: #212529;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        code {
+            background: #e9ecef;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
+            font-size: 12px;
+        }
+
+        pre {
+            background: #e9ecef;
+            padding: 12px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin-top: 8px;
+            font-size: 12px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
+        }
+
+        .row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .col {
+            flex: 1;
+        }
+
+        ul {
+            margin-left: 20px;
+            margin-top: 10px;
+            color: #495057;
+        }
+
+        ul li {
+            margin-bottom: 5px;
+        }
+
+        .warning {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 4px;
+            color: #721c24;
+            font-size: 13px;
+            margin-top: 20px;
+        }
+
+        .warning h3 {
+            color: #721c24;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 12px 15px;
+            border-radius: 4px;
+            color: #856404;
+            margin-top: 15px;
+        }
+
+        .highlight strong {
+            color: #212529;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .github-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            transition: background-color 0.15s;
+        }
+
+        .github-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .github-link svg {
+            flex-shrink: 0;
+        }
+
+        .github-link span {
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            .row {
+                flex-direction: column;
+            }
+            .github-link span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>网页截图 API</h1>
+                <a href="https://github.com/rehiy/webshot" target="_blank" class="github-link" title="GitHub 项目地址">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    <span>项目地址</span>
+                </a>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>欢迎使用网页截图服务</h2>
+                <p>这是一个高性能的网页截图服务，支持多种设备模拟、盲水印嵌入和自定义渲染。</p>
+            </div>
+
+            <div class="section">
+                <h2>快速开始</h2>
+                <p>要使用此服务，您需要一个有效的访问令牌。请使用以下格式访问调试界面：</p>
+                <div class="info-box">
+                    <h3>访问调试页面</h3>
+                    <pre>https://your-server.com/your-token</pre>
+                    <p>将 <code>your-token</code> 替换为您的实际令牌。</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>API 接口</h2>
+                <p>提供两个主要的 API 端点：</p>
+                <ul>
+                    <li><strong>网页截图</strong>：POST /token</li>
+                    <li><strong>盲水印提取</strong>：POST /token/extract</li>
+                </ul>
+                <p>所有请求都需要有效的令牌路径。</p>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <div class="section">
+                        <h2>主要功能</h2>
+                        <ul>
+                            <li>支持 URL 或 HTML 内容截图</li>
+                            <li>多种设备模拟（桌面、移动、平板）</li>
+                            <li>自定义等待策略</li>
+                            <li>JavaScript 执行</li>
+                            <li>盲水印嵌入与提取</li>
+                            <li>背景颜色去除</li>
+                            <li>图像优化处理</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="section">
+                        <h2>使用示例</h2>
+                        <div class="info-box">
+                            <h3>cURL 请求示例</h3>
+                            <pre>curl -X POST https://your-server.com/token \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com"}' \
+  -o screenshot.png</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="warning">
+                <h3>重要说明</h3>
+                <p>此服务仅供授权用户使用。请妥善保管您的访问令牌，不要将其泄露给他人。如果您没有令牌，请联系系统管理员获取访问权限。</p>
+            </div>
+
+            <div class="highlight">
+                <p><strong>提示：</strong>访问正确的令牌路径后，您将看到一个功能完整的调试界面，所有 API 请求将自动使用当前 URL 中的令牌，无需额外配置。</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
