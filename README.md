@@ -2,6 +2,8 @@
 
 基于 Playwright 的网页截图服务，支持多设备模拟、图片处理和盲水印。
 
+**项目地址：** [https://github.com/rehiy/webshot](https://github.com/rehiy/webshot)
+
 ## 快速开始
 
 ```bash
@@ -12,7 +14,7 @@ docker run --name webshot -d \
   rehiy/webshot
 ```
 
-访问 `http://localhost:3000` 可使用调试界面。
+访问 `http://localhost:3000` 打开使用说明页面。
 
 ## API 使用
 
@@ -22,8 +24,6 @@ docker run --name webshot -d \
 POST http://{HOST}:{PORT}/{TOKEN}
 Content-Type: application/json
 ```
-
-或直接访问调试页面：`http://{HOST}:{PORT}`
 
 ### 请求参数
 
@@ -119,18 +119,20 @@ curl -X POST http://your-ip:3000/your-token \
 ```
 
 水印会自动包含以下信息：
-- 自定义文本
-- 时间戳
-- URL 或 HTML 标识
-- 设备类型
-- 浏览器 User-Agent
-- 等待策略
-- 去除背景色设置
-- Cookie 数量
-- JavaScript 执行状态
+
+* 自定义文本
+* 时间戳
+* URL 或 HTML 标识
+* 设备类型
+* 浏览器 User-Agent
+* 等待策略
+* 去除背景色设置
+* Cookie 数量
+* JavaScript 执行状态
 
 **水印格式示例**:
-```
+
+```text
 版权所有 © 2026 | 2026-02-04 12:30:45 | URL:https://example.com | Device:Desktop Chrome | UA:Chrome 131.0 | Wait:load | Trim:#ffffff | Cookies:2 | JS:true
 ```
 
@@ -187,7 +189,8 @@ web-screenshot/
 │   ├── boot.sh                # 启动脚本
 │   ├── package.json           # 依赖配置
 │   ├── public/
-│   │   └── index.html         # 调试界面
+│   │   ├── index.html         # 调试界面（需通过 /{TOKEN} 访问）
+│   │   └── landing.html       # 使用说明页面（根路径访问）
 │   └── services/
 │       ├── browser-manager.js # 浏览器生命周期管理
 │       ├── image-processor.js # 图片处理（压缩、裁剪、盲水印）
@@ -200,26 +203,25 @@ web-screenshot/
 
 ### 核心模块说明
 
-- **browser-manager.js**: 管理 Playwright 浏览器实例的创建和销毁，每次截图使用独立实例避免状态污染
-- **image-processor.js**: 基于 Sharp 处理图片，支持压缩、裁剪和 LSB 盲水印（修改蓝色通道最低位）
-- **request-handler.js**: 处理 HTTP 请求体解析和响应发送
-- **screenshot.js**: 核心截图逻辑，支持 URL/HTML 两种方式，集成 Cookie、JS 执行和水印功能
+* **browser-manager.js**: 管理 Playwright 浏览器实例的创建和销毁，每次截图使用独立实例避免状态污染
+* **image-processor.js**: 基于 Sharp 处理图片，支持压缩、裁剪和 LSB 盲水印（修改蓝色通道最低位）
+* **request-handler.js**: 处理 HTTP 请求体解析和响应发送
+* **screenshot.js**: 核心截图逻辑，支持 URL/HTML 两种方式，集成 Cookie、JS 执行和水印功能
 
 ## 安全
 
 * ✅ Docker 沙盒隔离
 * ✅ 非 Privileged 模式
-* ✅ Token 鉴权
-* ✅ 盲水印支持来源追踪
+* ✅ 盲水印支持来源追踪和版权验证
+* ✅ 根路径显示使用说明页面，提供清晰的使用指引
+* ✅ 基于 URL 路径的 Token 鉴权（访问 `/{TOKEN}` 才可进入调试界面）
 
 ## 注意事项
 
-1. 沙盒环境可能限制外部网站访问
-2. 每次截图创建独立浏览器实例
-3. 更新代码需重新构建镜像
-4. Token 请妥善保管
-5. 盲水印通过修改蓝色通道最低位实现，视觉不可见但可提取验证
-6. 水印信息包含完整的截图参数，便于追踪和审计
+* Token 请妥善保管
+* 盲水印通过修改蓝色通道最低位实现
+* 沙盒环境可能限制外部网站访问
+* 更新代码需重新构建镜像
 
 ## 许可证
 
