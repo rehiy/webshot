@@ -1,38 +1,23 @@
-/**
- * HTTP 请求处理器
- * 负责处理请求体解析和响应发送
- */
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+
+import { ScreenshotService } from './screenshot.js';
+import { ImageProcessor } from './image-processor.js';
+
 export class RequestHandler {
-    /** 请求体数据块数组 */
-    #chunks = [];
-
     /**
-     * 处理请求体数据
-     * @param {Buffer} chunk - 数据块
-     */
-    handleBody(chunk) {
-        this.#chunks.push(chunk);
-    }
-
-    /**
-     * 解析请求体为 JSON
-     * @returns {Promise<object>} 解析后的对象
+     * 解析请求体数据块为 JSON
+     * @param {Buffer[]} chunks - 数据块数组
+     * @returns {object} 解析后的对象
      * @throws {SyntaxError} JSON 解析错误
      */
-    async parseBody() {
+    static parseBody(chunks) {
+        const raw = Buffer.concat(chunks).toString() || '{}';
         try {
-            const raw = Buffer.concat(this.#chunks).toString() || '{}';
             return JSON.parse(raw);
         } catch (error) {
             throw new SyntaxError(`Invalid JSON: ${error.message}`);
         }
-    }
-
-    /**
-     * 重置处理器状态
-     */
-    reset() {
-        this.#chunks = [];
     }
 
     /**
@@ -72,5 +57,51 @@ export class RequestHandler {
      */
     static sendError(res, statusCode, error, message = '') {
         this.sendJson(res, statusCode, { error, message });
+    }
+
+    /**
+     * 处理截图请求
+     * @param {object} body - 请求体
+     * @param {import('http').ServerResponse} res - 响应对象
+     */
+    static async handleScreenshot(body, res) {
+        const image = await ScreenshotService.capture(body);
+        this.sendImage(res, image);
+    }
+
+    /**
+     * 处理水印提取请求
+     * @param {object} body - 请求体
+     * @param {import('http').ServerResponse} res - 响应对象
+     */
+    static async handleWatermarkExtract(body, res) {
+        if (!body.image) {
+            this.sendError(res, 400, 'Missing image data');
+            return;
+        }
+        const watermark = await ImageProcessor.extractWatermark(
+            Buffer.from(body.image, 'base64')
+        );
+        this.sendJson(res, 200, { watermark });
+    }
+
+    /**
+     * 发送静态文件
+     * @param {string} filename - 文件名
+     * @param {import('http').ServerResponse} res - HTTP 响应对象
+     * @param {string} baseDir - 基础目录路径
+     */
+    static handleStaticFile(filename, res, baseDir) {
+        try {
+            const filePath = join(baseDir, filename);
+            if (!existsSync(filePath)) {
+                this.sendError(res, 404, 'File not found');
+                return;
+            }
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+            res.end(readFileSync(filePath, 'utf-8'));
+        } catch (error) {
+            this.sendError(res, 500, 'Internal Server Error');
+        }
     }
 }
