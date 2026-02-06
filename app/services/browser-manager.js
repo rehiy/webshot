@@ -36,7 +36,10 @@ export class BrowserManager {
      */
     static async #getBrowser() {
         if (!this.#browser) {
-            this.#browser = await chromium.launch();
+            this.#browser = await chromium.launch({
+                chromiumSandbox: true,
+                headless: true,
+            });
         }
         return this.#browser;
     }

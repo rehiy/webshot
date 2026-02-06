@@ -16,6 +16,34 @@ docker run --name webshot -d \
 
 访问 `http://localhost:3000` 打开使用说明页面。
 
+## 安全启动
+
+```bash
+docker run --name webshot -d \
+  --restart unless-stopped \
+  --ipc=host --user pwuser --security-opt seccomp=seccomp_profile.json \
+  -e TOKEN=your-token \
+  -p 3000:3000 \
+  rehiy/webshot
+```
+
+### seccomp_profile.json
+
+```json
+{
+  "comment": "Allow create user namespaces",
+  "names": [
+    "clone",
+    "setns",
+    "unshare"
+  ],
+  "action": "SCMP_ACT_ALLOW",
+  "args": [],
+  "includes": {},
+  "excludes": {}
+}
+```
+
 ## API 使用
 
 ### 请求格式
