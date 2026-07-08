@@ -7,8 +7,11 @@ WORKDIR /app
 
 COPY app/ ./
 RUN npm install --production
+RUN chown -R pwuser:pwuser /app
 
 ENV TOKEN=your-token
 ENV PORT=3000
+
+USER pwuser
 
 CMD ["sh", "/app/boot.sh"]

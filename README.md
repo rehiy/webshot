@@ -9,6 +9,7 @@
 ```bash
 docker run --name webshot -d \
   --restart unless-stopped \
+  --init --ipc=host --user pwuser --security-opt seccomp=seccomp_profile.json \
   -e TOKEN=your-token \
   -p 3000:3000 \
   rehiy/webshot
@@ -21,11 +22,30 @@ docker run --name webshot -d \
 ```bash
 docker run --name webshot -d \
   --restart unless-stopped \
-  --ipc=host --user pwuser --security-opt seccomp=seccomp_profile.json \
+  --init --ipc=host --user pwuser --security-opt seccomp=seccomp_profile.json \
   -e TOKEN=your-token \
   -p 3000:3000 \
   rehiy/webshot
 ```
+
+生产环境必须使用非 root 用户和 `seccomp_profile.json` 启动容器，否则 Chromium 沙箱可能无法启用，后台爬虫会退化为未开沙箱运行。
+
+Docker Compose / iSrvd 生成的服务配置也需要包含同等运行时参数：
+
+```yaml
+services:
+  webshot:
+    image: rehiy/webshot
+    user: pwuser
+    init: true
+    ipc: host
+    security_opt:
+      - seccomp=./seccomp_profile.json
+    environment:
+      TOKEN: ${TOKEN}
+```
+
+如果编排平台不支持相对路径，请将 `seccomp=./seccomp_profile.json` 改为宿主机上的绝对路径。
 
 ### seccomp_profile.json
 
