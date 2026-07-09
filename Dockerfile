@@ -5,9 +5,9 @@ LABEL author="rehiy"
 
 WORKDIR /app
 
-COPY app/ ./
-RUN npm install --production
-RUN chown -R pwuser:pwuser /app
+COPY --chown=pwuser:pwuser app/package*.json ./
+RUN npm install --omit=dev && npm cache clean --force
+COPY --chown=pwuser:pwuser app/ ./
 
 ENV TOKEN=your-token
 ENV PORT=3000
