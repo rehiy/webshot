@@ -1,3 +1,8 @@
 test
 node_modules
 package-lock.json
+app/node_modules
+app/test
+npm-debug.log*
+.git
+.gitignore

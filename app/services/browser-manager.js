@@ -38,6 +38,7 @@ export class BrowserManager {
         if (!this.#browser) {
             this.#browser = await chromium.launch({
                 chromiumSandbox: true,
+                channel: 'chromium',
                 headless: true,
             });
         }

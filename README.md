@@ -9,6 +9,7 @@
 ```bash
 docker run --name webshot -d \
   --restart unless-stopped \
+  --init --ipc=host --user pwuser --security-opt seccomp=seccomp_profile.json \
   -e TOKEN=your-token \
   -p 3000:3000 \
   rehiy/webshot
@@ -21,11 +22,67 @@ docker run --name webshot -d \
 ```bash
 docker run --name webshot -d \
   --restart unless-stopped \
-  --ipc=host --user pwuser --security-opt seccomp=seccomp_profile.json \
+  --init --ipc=host --user pwuser --security-opt seccomp=seccomp_profile.json \
   -e TOKEN=your-token \
   -p 3000:3000 \
   rehiy/webshot
 ```
+
+生产环境必须使用非 root 用户和 `seccomp_profile.json` 启动容器，否则 Chromium 沙箱可能无法启用，后台爬虫会退化为未开沙箱运行。
+服务启动浏览器时指定了 `channel: 'chromium'`，避免 Playwright 默认使用 `chromium_headless_shell` 二进制导致安全平台继续按 headless shell 路径命中风险。
+
+Docker Compose 生成的服务配置也需要包含同等运行时参数：
+
+```yaml
+services:
+  webshot:
+    image: rehiy/webshot
+    user: pwuser
+    init: true
+    ipc: host
+    security_opt:
+      - seccomp=./seccomp_profile.json
+    environment:
+      TOKEN: ${TOKEN}
+```
+
+如果编排平台不支持相对路径，请将 `seccomp=./seccomp_profile.json` 改为宿主机上的绝对路径。
+
+### 部署后验证沙箱
+
+先请求一次截图接口，确保 Chromium 进程已经被拉起：
+
+```bash
+curl -X POST "http://127.0.0.1:3000/${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"html":"<html><body><h1>sandbox check</h1></body></html>"}' \
+  -o /tmp/webshot-sandbox-check.png
+```
+
+在宿主机检查容器运行参数：
+
+```bash
+docker inspect webshot \
+  --format 'User={{json .Config.User}} SecurityOpt={{json .HostConfig.SecurityOpt}} IpcMode={{json .HostConfig.IpcMode}} Init={{json .HostConfig.Init}}'
+```
+
+期望结果包含 `User="pwuser"`、`SecurityOpt` 中有 `seccomp=...`、`IpcMode="host"`、`Init=true`。
+
+检查 Chromium 进程路径，确认服务使用完整 Chromium，而不是 headless shell：
+
+```bash
+docker exec webshot sh -lc "ps aux | grep -E 'chrome|chromium' | grep -v grep"
+```
+
+期望看到类似 `/ms-playwright/chromium-.../chrome-linux64/chrome` 的路径，不应出现 `/ms-playwright/chromium_headless_shell-.../chrome-headless-shell`。
+
+检查是否被显式关闭沙箱：
+
+```bash
+docker exec webshot sh -lc "ps aux | grep -E 'chrome|chromium' | grep -v grep | grep -- '--no-sandbox' || echo 'OK: no --no-sandbox'"
+```
+
+期望输出 `OK: no --no-sandbox`。如果只看到 `--no-zygote-sandbox` 或 `--service-sandbox-type=none`，不等同于整体 `--no-sandbox`。
 
 ### seccomp_profile.json
 
